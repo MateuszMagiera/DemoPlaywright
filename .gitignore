@@ -54,3 +54,6 @@ htmlcov/
 # OS
 Thumbs.db
 .DS_Store
+
+# Planning docs (local only, not for version control)
+plan/
