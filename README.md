@@ -1,4 +1,181 @@
-# Agent Usage Guide Framework
+# DemoPlaywright — QA Automation Showcase
+
+> **Python + Playwright** portfolio project demonstrating senior-level test automation across
+> functional, security, performance, accessibility, AI testing and more.
+
+[![CI](https://github.com/user/DemoPlaywright/actions/workflows/tests.yml/badge.svg)](https://github.com/user/DemoPlaywright/actions)
+[![Phase](https://img.shields.io/badge/Phase-1%20Complete-brightgreen)](#phases)
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# 1. Clone & create venv
+git clone https://github.com/user/DemoPlaywright.git
+cd DemoPlaywright
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Linux/Mac
+
+# 2. Install dependencies
+pip install -r requirements-dev.txt
+playwright install
+
+# 3. Copy env config
+cp .env.example .env
+
+# 4. Run smoke tests
+pytest tests/functional/ -m smoke -v
+
+# 5. Run all tests (excluding slow)
+pytest tests/functional/ -m "not slow"
+
+# 6. Generate HTML report
+pytest tests/functional/ -m "not slow" --html=reports/report.html --self-contained-html
+```
+
+---
+
+## 📁 Project Structure
+
+```
+src/
+├── config.py                     # pydantic-settings config (BROWSER, HEADLESS, etc.)
+└── pages/
+    ├── base_page.py              # BasePage — typed helpers for all page objects
+    ├── forms/
+    │   ├── text_box_page.py      # TextBox form POM
+    │   ├── checkbox_page.py      # CheckBox tree POM (rc-tree widget)
+    │   └── radio_button_page.py  # RadioButton POM
+    ├── widgets/
+    │   ├── slider_page.py        # Slider widget POM
+    │   ├── progress_bar_page.py  # Progress bar POM
+    │   └── tabs_page.py          # Tabs widget POM
+    └── alerts/
+        ├── alerts_page.py        # Alert dialogs POM
+        └── browser_windows_page.py  # Multi-tab/window POM
+tests/
+└── functional/
+    ├── conftest.py               # Page object fixtures
+    ├── test_forms.py             # TextBox, CheckBox, RadioButton tests
+    ├── test_widgets.py           # Slider, ProgressBar, Tabs tests
+    └── test_alerts.py            # Alert, Confirm, Prompt, Window tests
+conftest.py                       # Root: browser, context, page fixtures + screenshot on fail
+pyproject.toml                    # pytest config, ruff, mypy settings
+```
+
+---
+
+## ✅ Running Tests
+
+```bash
+# Smoke tests only (fast, happy-path)
+pytest tests/functional/ -m smoke -v
+
+# Full functional suite (excluding slow)
+pytest tests/functional/ -m "not slow" -v
+
+# Specific test class
+pytest tests/functional/test_forms.py::TestTextBox -v
+
+# With Allure report
+pytest tests/functional/ -m "not slow" --alluredir=reports/allure-results
+allure serve reports/allure-results
+
+# With HTML report
+pytest tests/functional/ -m "not slow" --html=reports/report.html --self-contained-html
+
+# All tests including slow (progress bar waits)
+pytest tests/functional/ -v
+```
+
+---
+
+## ⚙️ Configuration
+
+Copy `.env.example` to `.env` and edit:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BROWSER` | `chromium` | Browser: chromium / firefox / webkit |
+| `HEADLESS` | `true` | Run headless (false = visible browser) |
+| `SLOW_MO` | `0` | Slow motion delay between actions (ms) |
+| `DEFAULT_TIMEOUT` | `30000` | Default element timeout (ms) |
+| `TRACING` | `retain-on-failure` | Playwright tracing: off / on / retain-on-failure |
+| `VIDEO` | `retain-on-failure` | Video recording mode |
+
+---
+
+## 🧪 Test Markers
+
+| Marker | Description |
+|--------|-------------|
+| `@pytest.mark.smoke` | Fast happy-path — run on every push |
+| `@pytest.mark.regression` | Full regression suite |
+| `@pytest.mark.slow` | Tests > 10s (progress bar, timers) |
+| `@pytest.mark.functional` | UI / E2E tests |
+| `@pytest.mark.api` | API-layer tests (no browser) |
+| `@pytest.mark.security` | Security & penetration tests |
+| `@pytest.mark.performance` | Load / stress tests |
+
+---
+
+## 📊 Phase Progress
+
+| Phase | Status | Area | Key Skills |
+|-------|--------|------|-----------|
+| **1 — Foundation** | ✅ Done | Functional E2E | POM, fixtures, type hints, parallel |
+| 2 — API Testing | 🔜 Next | API + Contract | httpx, pydantic, Pact |
+| 3 — Reporting | ⏳ Planned | Observability | Allure, structlog, Slack |
+| 4 — CI/CD | ⏳ Planned | DevOps | GitHub Actions, Pages |
+| 5 — Performance | ⏳ Planned | Load/Stress | Locust, k6 |
+| 6 — Security | ⏳ Planned | OWASP, pentest | ZAP, Bandit |
+| 7 — Accessibility | ⏳ Planned | WCAG 2.1 | axe-playwright |
+| 8 — Database | ⏳ Planned | Data integrity | Testcontainers |
+| 9 — Quality | ⏳ Planned | Mutation testing | mutmut, Codecov |
+| 10 — AI Testing | ⏳ Planned | LLM evaluation | DeepEval, Ollama |
+| 11 — AI Agents | ⏳ Planned | Agent delegation | LangChain |
+| 12 — Monitoring | ⏳ Planned | Dashboard | Grafana, Prometheus |
+| 13 — Advanced | ⏳ Planned | Chaos, i18n, mobile | toxiproxy |
+
+Full plan: [`plan/OVERVIEW.md`](plan/OVERVIEW.md)
+
+---
+
+## 🛠️ Dev Tools
+
+```bash
+# Lint + format
+ruff check . --fix
+ruff format .
+
+# Type checking
+mypy src/
+
+# Pre-commit hooks (run on every git commit)
+pre-commit install
+pre-commit run --all-files
+```
+
+---
+
+## 📦 Tech Stack (Phase 1)
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| Python | 3.12 | Language |
+| Playwright | 1.61 | Browser automation |
+| pytest | 9.1 | Test runner |
+| pytest-xdist | 3.8 | Parallel execution |
+| pydantic-settings | 2.14 | Typed config |
+| allure-pytest | 2.16 | Rich reports |
+| ruff | 0.15 | Linter + formatter |
+| mypy | 2.1 | Type checker |
+
+---
+
+## Agent Usage Guide Framework
 
 This directory contains a comprehensive framework for using agents and skills following the **caveman principles** — optimizing for token efficiency, clarity, and speed.
 

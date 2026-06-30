@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "demo-playwright"
 version = "0.1.0"
-description = "Playwright automation framework with caveman agent system"
+description = "QA showcase: Playwright + Python + AI agents + security + performance"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
@@ -14,9 +14,48 @@ dependencies = []
 dev = [
     "ruff>=0.4.0",
     "pre-commit>=3.0.0",
-    "pytest>=7.0.0",
+    "pytest>=8.0.0",
+    "playwright>=1.44.0",
+    "pytest-playwright>=0.5.0",
+    "pytest-xdist>=3.5.0",
+    "pytest-html>=4.0.0",
+    "allure-pytest>=2.13.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "mypy>=1.8.0",
 ]
 
+# ─── pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--tb=short",
+    "--strict-markers",
+    "-v",
+]
+markers = [
+    "smoke: fast happy-path tests — run on every push",
+    "regression: full regression suite",
+    "slow: tests expected to take >10 seconds",
+    "functional: UI / end-to-end tests",
+    "api: API-layer tests (no browser)",
+    "security: security & penetration tests",
+    "performance: load / stress tests",
+    "accessibility: WCAG accessibility tests",
+    "visual: visual regression tests",
+    "ai: AI model evaluation tests (requires Ollama)",
+]
+
+# ─── mypy ─────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [".venv", "tests"]
+
+# ─── ruff ─────────────────────────────────────────────────────────────────────
 [tool.ruff]
 line-length = 100
 target-version = "py39"
@@ -36,4 +75,4 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["demo_playwright"]
+known-first-party = ["src"]

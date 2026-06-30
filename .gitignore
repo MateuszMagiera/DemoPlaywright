@@ -45,6 +45,10 @@ venv.bak/
 htmlcov/
 .tox/
 
+# Test reports / artifacts (generated, not committed)
+reports/
+logs/
+
 # Pre-commit
 .pre-commit/
 
