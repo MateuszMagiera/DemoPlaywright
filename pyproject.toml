@@ -29,6 +29,7 @@ dev = [
 # ─── pytest ───────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 addopts = [
     "--tb=short",
     "--strict-markers",
