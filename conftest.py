@@ -9,6 +9,27 @@ import pytest
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_playwright
 
 from src.config import Settings, get_settings
+from src.logging_config import get_logger
+
+pytest_plugins = ["src.plugins.reporter_plugin"]
+
+logger = get_logger("pytest")
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Create directories used by the reporting stack and configure HTML report output."""
+    Path("reports/allure-results").mkdir(parents=True, exist_ok=True)
+    Path("reports/screenshots").mkdir(parents=True, exist_ok=True)
+    Path("reports/traces").mkdir(parents=True, exist_ok=True)
+
+    config.option.htmlpath = "reports/report.html"
+    config.option.self_contained_html = True
+
+    css_files = getattr(config.option, "css", None) or []
+    if "reports/custom.css" not in css_files:
+        css_files = [*css_files, "reports/custom.css"]
+        config.option.css = css_files
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Settings fixture
@@ -47,7 +68,7 @@ def browser(playwright_instance: Playwright, settings: Settings) -> Generator[Br
 
 @pytest.fixture
 def context(
-    browser: Browser, settings: Settings, tmp_path: Path
+    browser: Browser, settings: Settings, tmp_path: Path, request: pytest.FixtureRequest
 ) -> Generator[BrowserContext, None, None]:
     """Function-scoped browser context — isolated state per test."""
     context = browser.new_context(
@@ -64,6 +85,7 @@ def context(
 
     # ── teardown ──────────────────────────────────────────────────────────────
     _stop_tracing(context, settings)
+    _attach_failure_video(context, request)
     context.close()
 
 
@@ -80,11 +102,31 @@ def page(context: BrowserContext) -> Generator[Page, None, None]:
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    """Log when a test starts."""
+    logger.info("test_start | test_name=%s", item.nodeid)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_teardown(item: pytest.Item, nextitem: pytest.Item | None) -> None:
+    """Log when a test finishes."""
+    logger.info("test_end | test_name=%s", item.nodeid)
+
+
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):  # type: ignore[override]
     """Capture screenshot on test failure and attach to HTML / Allure report."""
     outcome = yield
     report = outcome.get_result()
+
+    if report.when == "call":
+        logger.info(
+            "test_result | test_name=%s status=%s duration_ms=%s",
+            item.nodeid,
+            report.outcome,
+            int(report.duration * 1000),
+        )
 
     if report.when == "call" and report.failed:
         _capture_failure_screenshot(item)
@@ -139,3 +181,35 @@ def _stop_tracing(context: BrowserContext, settings: Settings) -> None:
     traces_dir.mkdir(parents=True, exist_ok=True)
     trace_path = traces_dir / "trace.zip"
     context.tracing.stop(path=str(trace_path))
+
+
+def _attach_failure_video(context: BrowserContext, request: pytest.FixtureRequest) -> None:
+    """Attach a Playwright video artifact to Allure when a test fails."""
+    rep_call = getattr(request.node, "rep_call", None)
+    if rep_call is None or not getattr(rep_call, "failed", False):
+        return
+
+    try:
+        import allure
+
+        for page in context.pages:
+            video = getattr(page, "video", None)
+            if video is None:
+                continue
+            try:
+                video_path = video.path()
+            except Exception:
+                continue
+            if Path(video_path).exists():
+                attachment_type = getattr(allure.attachment_type, "WEBM", None)
+                if attachment_type is None:
+                    allure.attach.file(str(video_path), name="video_on_failure")
+                else:
+                    allure.attach.file(
+                        str(video_path),
+                        name="video_on_failure",
+                        attachment_type=attachment_type,
+                    )
+                break
+    except Exception:
+        pass

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import base64
 import json
-import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from src.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -64,7 +65,7 @@ class AuthManager:
         """Store a token and parse its payload."""
         self._token = token
         self._payload = TokenPayload.from_jwt(token)
-        logger.debug("Auth token set", extra={"subject": self._payload.subject()})
+        logger.debug("auth_token_set | subject=%s", self._payload.subject())
 
     def get_token(self) -> str:
         """Return the stored token, raising if not set."""

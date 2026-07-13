@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
 
-logger = logging.getLogger(__name__)
+from src.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -156,41 +157,34 @@ class ApiClient:
     async def _request(self, method: str, path: str, **kwargs: Any) -> ApiResponse:
         """Execute request with exponential back-off retry on transient errors."""
         last_exc: Exception | None = None
+        url = f"{self.base_url}{path}"
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                logger.debug(
-                    "API request",
-                    extra={"method": method, "path": path, "attempt": attempt},
-                )
+                logger.info("api_request | method=%s url=%s attempt=%s", method, url, attempt)
                 response = await self._client.request(method, path, **kwargs)
                 api_response = ApiResponse.from_httpx(response)
-                logger.debug(
-                    "API response",
-                    extra={"status": api_response.status, "url": api_response.url},
+                logger.info(
+                    "api_response | method=%s url=%s status_code=%s",
+                    method,
+                    api_response.url,
+                    api_response.status,
                 )
                 return api_response
 
             except httpx.TimeoutException as exc:
                 last_exc = exc
-                logger.warning(
-                    "Request timeout",
-                    extra={"method": method, "path": path, "attempt": attempt},
-                )
+                logger.error("api_timeout | method=%s url=%s attempt=%s", method, url, attempt)
                 if attempt < self.max_retries:
                     await asyncio.sleep(self.retry_delay * attempt)
 
             except httpx.RequestError as exc:
                 last_exc = exc
-                logger.warning(
-                    "Request error",
-                    extra={"method": method, "path": path, "error": str(exc)},
-                )
+                logger.error("api_request_error | method=%s url=%s error=%s", method, url, exc)
                 if attempt < self.max_retries:
                     await asyncio.sleep(self.retry_delay * attempt)
 
         # All retries exhausted
-        url = f"{self.base_url}{path}"
         if isinstance(last_exc, httpx.TimeoutException):
             raise ApiTimeoutError(url) from last_exc
         raise ApiError(0, str(last_exc), url) from last_exc
