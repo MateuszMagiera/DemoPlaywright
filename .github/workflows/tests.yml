@@ -38,18 +38,63 @@ jobs:
       - name: Install Playwright browser
         run: |
           playwright install --with-deps chromium
+      - name: Install Allure CLI
+        run: |
+          npm install -g allure-commandline
       - name: Run tests
         run: |
           pytest tests/ -m "smoke or api" --alluredir=reports/allure-results --html=reports/report.html --self-contained-html
+      - name: Generate Allure report
+        if: always()
+        run: |
+          mkdir -p reports/allure-report
+          if [ -d reports/allure-results ] && [ "$(find reports/allure-results -type f | wc -l)" -gt 0 ]; then
+            allure generate reports/allure-results --clean -o reports/allure-report
+          else
+            cp reports/report.html reports/allure-report/index.html
+          fi
       - name: Upload Allure results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: reports/allure-results/
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: reports/allure-report/
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: html-report
           path: reports/report.html
+
+  deploy-pages:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download Allure report
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-report
+          path: ./site
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
