@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from playwright.sync_api import Locator, Page
 
@@ -27,11 +28,11 @@ class BasePage:
         self.page.goto(self.URL)
         self.page.wait_for_load_state("networkidle")
 
-    def get_title(self) -> str:
+    def get_title(self) -> str | Any:
         """Return the current page title."""
         return self.page.title()
 
-    def get_url(self) -> str:
+    def get_url(self) -> str | Any:
         """Return the current page URL."""
         return self.page.url
 
@@ -52,15 +53,15 @@ class BasePage:
         locator.clear()
         locator.fill(value)
 
-    def get_text(self, selector: str) -> str:
+    def get_text(self, selector: str) -> str | Any:
         """Return the visible text content of an element."""
         return self.page.locator(selector).inner_text()
 
-    def is_visible(self, selector: str) -> bool:
+    def is_visible(self, selector: str) -> bool | Any:
         """Return True if the element matching *selector* is visible."""
         return self.page.locator(selector).is_visible()
 
-    def is_enabled(self, selector: str) -> bool:
+    def is_enabled(self, selector: str) -> bool | Any:
         """Return True if the element matching *selector* is enabled."""
         return self.page.locator(selector).is_enabled()
 
